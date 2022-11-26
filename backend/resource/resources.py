@@ -1,10 +1,12 @@
 import datetime
 
 from backend.app import app
-from backend.models.models import User, UserSchema, Bank, LoanSchema, Loan, UpdateUserSchema
+from backend.models.models import User, Bank, LoanSchema, Loan, UpdateUserSchema
 from flask import jsonify, request
 from marshmallow import ValidationError
-from backend.app import bcrypt
+# from backend.app import bcrypt
+from backend.utils import admin_required
+from flask_jwt_extended import jwt_required
 
 
 @app.route("/")
@@ -12,39 +14,9 @@ def index():
     return "<h1>Main page</h1>"
 
 
-@app.route("/register", methods=["POST"])
-def register():
-    data = request.get_json()
-
-    pw_hash = bcrypt.generate_password_hash('hunter2')
-    data["password"] = pw_hash
-
-    schema_user = UserSchema()
-    try:
-        user, about_user = schema_user.load(data)
-    except ValidationError as err:
-        return jsonify({"Validation errors": [err.messages[mesg][0] for mesg in err.messages]}), 405
-
-    if User.find_by_login(data["login"]):
-        return jsonify({'Error': f'User {data["login"]} already exists'}), 403
-
-    if User.find_by_passport_number(data["passport_number"]):
-        return jsonify({'Error': f'User with passport number={data["passport_number"]} already exists'}), 403
-
-    if User.find_by_card_number(data["card_number"]):
-        return jsonify({'Error': f'User with card number={data["card_number"]} already exists'}), 403
-
-    user.bank_id = 1
-    user.save_to_db()
-    iduser = User.find_by_login(data["login"]).user_id
-    about_user.user_id = iduser
-    user.info.append(about_user)
-    about_user.save_to_db()
-
-    return jsonify({'Message': 'User has been created successfully.'})
-
-
 @app.route('/user', methods=['PUT'])
+@jwt_required()
+@admin_required
 def update_user():
     data = request.get_json()
     user = User.query.get(data["user_id"])
@@ -88,6 +60,7 @@ def update_user():
 
 
 @app.route('/user/<user_id>', methods=['GET'])
+@jwt_required()
 def get_user_by_id(user_id: int):
     user = User.query.get(user_id)
     if not user:
@@ -105,11 +78,13 @@ def get_user_by_id(user_id: int):
 
 
 @app.route('/user/<user_id>', methods=['DELETE'])
+@jwt_required()
 def delete_user_by_id(user_id: int):
     return User.delete_by_id(user_id)
 
 
 @app.route('/user/loan/<user_id>', methods=['GET'])
+@jwt_required()
 def get_all_user_loans(user_id: int):
     user = User.query.get(user_id)
     if not user:
@@ -119,6 +94,8 @@ def get_all_user_loans(user_id: int):
 
 
 @app.route('/bank/<bank_id>', methods=['GET'])
+@jwt_required()
+@admin_required
 def get_bank_reserve(bank_id: int):
     bank = Bank.query.get(bank_id)
     if not bank:
@@ -128,6 +105,7 @@ def get_bank_reserve(bank_id: int):
 
 
 @app.route("/loan", methods=["POST"])
+@jwt_required()
 def create_loan():
     data = request.get_json()
     schema = LoanSchema()
@@ -149,16 +127,21 @@ def create_loan():
 
 
 @app.route('/loan/<loan_id>', methods=['GET'])
+@jwt_required()
 def get_loan(loan_id: int):
     return Loan.get_loan_by_id(loan_id)
 
 
 @app.route('/loan', methods=['GET'])
+@jwt_required()
+@admin_required
 def get_all_loans():
     return jsonify({"loans": [Loan.get_loan_by_id(loan.loan_id) for loan in Loan.query.all()]})
 
 
 @app.route('/loan', methods=['PUT'])
+@jwt_required()
+@admin_required
 def update_loan():
     data = request.get_json()
     loan = Loan.query.get(data["loan_id"])
@@ -180,5 +163,7 @@ def update_loan():
 
 
 @app.route('/loan/<loan_id>', methods=['DELETE'])
+@jwt_required()
+@admin_required
 def delete_loan(loan_id: int):
     return Loan.delete_by_id(loan_id)

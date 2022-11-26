@@ -2,6 +2,7 @@ from backend.app import db
 from marshmallow import Schema, fields, validate, post_load
 from flask import jsonify
 import datetime
+from flask_jwt_extended import create_access_token
 
 
 class User(db.Model):
@@ -16,6 +17,8 @@ class User(db.Model):
     loans = db.relationship('Loan', backref='user', lazy=True)
     bank_id = db.Column(db.Integer(), db.ForeignKey('bank.bank_id', ondelete='CASCADE'))
     info = db.relationship("AboutUser", backref="user")
+
+    role = db.Column(db.Enum("User", "Admin"), nullable=False, default="User")
 
     def save_to_db(self):
         db.session.add(self)
@@ -42,6 +45,10 @@ class User(db.Model):
             return jsonify({'message': f'User with id={userid} was successfully deleted'})
         else:
             return jsonify({'error': f'User with id={userid} does not exist!'}), 404
+
+    def get_jwt(self):
+        access_token = create_access_token(identity=self.user_id)
+        return access_token
 
 
 class Loan(db.Model):
@@ -123,10 +130,17 @@ class UserSchema(Schema):
     email = fields.Email(validate=validate.Length(min=1, max=45), required=False)
     phone_number = fields.Str(validate=validate.Regexp(r'^[0-9]{12}$'), required=False)
 
+    role = fields.Str(validate=validate.OneOf(['User', 'Admin']), required=False)
+
+    def get_jwt(self):
+        access_token = create_access_token(identity=self.iduser)
+        return access_token
+
     @post_load
     def make_user(self, data, **kwargs):
         user_data = {"login": data["login"], "password": data["password"], "full_name": data["full_name"],
-                     "passport_number": data["passport_number"], "card_number": data["card_number"]}
+                     "passport_number": data["passport_number"], "card_number": data["card_number"],
+                     "role": data["role"]}
 
         user_about_data = {"date_of_birth": data["date_of_birth"]}
         if "email" in data:
