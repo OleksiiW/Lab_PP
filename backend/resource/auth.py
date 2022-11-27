@@ -46,7 +46,6 @@ def login():
     if not user:
         return jsonify({'message': f'User {data["login"]} doesn\'t exist'}), 404
 
-    print(bcrypt.check_password_hash(user.password, data["password"]))
     if not bcrypt.check_password_hash(user.password, data["password"]):
         return jsonify({'message': 'Wrong password'}), 403
 
