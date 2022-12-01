@@ -118,6 +118,7 @@ class AboutUser(db.Model):
 
 
 class UserSchema(Schema):
+    user_id = fields.Integer(required=False)
     login = fields.Str(validate=validate.Length(min=1, max=45), required=True)
     password = fields.Str(required=True)
     full_name = fields.Str(validate=validate.Length(min=1, max=45), required=True)
@@ -132,15 +133,14 @@ class UserSchema(Schema):
 
     role = fields.Str(validate=validate.OneOf(['User', 'Admin']), required=False)
 
-    def get_jwt(self):
-        access_token = create_access_token(identity=self.iduser)
-        return access_token
+    # def get_jwt(self):
+    #     access_token = create_access_token(identity=self.iduser)
+    #     return access_token
 
     @post_load
     def make_user(self, data, **kwargs):
         user_data = {"login": data["login"], "password": data["password"], "full_name": data["full_name"],
-                     "passport_number": data["passport_number"], "card_number": data["card_number"],
-                     "role": data["role"]}
+                     "passport_number": data["passport_number"], "card_number": data["card_number"]}
 
         user_about_data = {"date_of_birth": data["date_of_birth"]}
         if "email" in data:
@@ -152,6 +152,7 @@ class UserSchema(Schema):
 
 
 class LoanSchema(Schema):
+    loan_id = fields.Integer(required=False)
     date = fields.Date(required=False)
     debt = fields.Integer(required=True)
     user_id = fields.Integer(required=True)
