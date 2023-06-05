@@ -67,7 +67,7 @@ class Loan(db.Model):
     def get_current_debt(cls, loan_id):
         loan = cls.query.get(loan_id)
         diff = datetime.date.today() - loan.date
-        debt = loan.debt * (1.4) ** (diff.days // 30)
+        debt = loan.debt * (1.3 ** ((diff.days // 30)+1))
         return debt
 
     @classmethod

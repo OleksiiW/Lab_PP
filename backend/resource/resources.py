@@ -9,11 +9,6 @@ from backend.utils import admin_required
 from flask_jwt_extended import jwt_required
 
 
-@app.route("/")
-def index():
-    return "<h1>Main page</h1>"
-
-
 @app.route('/user', methods=['PUT'])
 @jwt_required()
 @admin_required
@@ -79,6 +74,7 @@ def get_user_by_id(user_id: int):
 
 @app.route('/user/<user_id>', methods=['DELETE'])
 @jwt_required()
+@admin_required
 def delete_user_by_id(user_id: int):
     return User.delete_by_id(user_id)
 
@@ -108,6 +104,10 @@ def get_bank_reserve(bank_id: int):
 @jwt_required()
 def create_loan():
     data = request.get_json()
+
+    if int(data["debt"]) < 100:
+        return jsonify({'Error': 'Еhe minimum amount is 100 hryvnias.'}), 406
+
     schema = LoanSchema()
     try:
         loan = schema.load(data)

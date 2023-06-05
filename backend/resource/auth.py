@@ -51,4 +51,9 @@ def login():
 
     access_token = user.get_jwt()
 
-    return jsonify({'message': f'Logged in as {data["login"]}', 'access_token': access_token})
+    if user.role == "Admin":
+        return jsonify({'message': f'Logged in as {data["login"]}', 'access_token': access_token,
+                        'user_id': f'{user.user_id}', 'role': f'{user.role}'})
+
+    return jsonify({'message': f'Logged in as {data["login"]}', 'access_token': access_token,
+                    'user_id': f'{user.user_id}'})
