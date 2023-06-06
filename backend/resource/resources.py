@@ -146,16 +146,21 @@ def update_loan():
     data = request.get_json()
     loan = Loan.query.get(data["loan_id"])
     if loan:
-        debt = Loan.get_current_debt(data["loan_id"])
+        debt = loan.debt
         bank = Bank.query.get(1)
-        bank.reserve += data["debt"]
-        if debt - data["debt"] <= 0:
+        bank.reserve += int(data["debt"])
+        if Loan.get_current_debt(data["loan_id"]) - int(data["debt"]) <= 0:
             Loan.delete_by_id(data["loan_id"])
             bank.save_to_db()
             return jsonify({'Message': 'Loan has been closed.'})
         else:
-            loan.debt = debt - data["debt"]
-            loan.date = datetime.date.today()
+            loan_date = datetime.date(loan.date.year, loan.date.month, loan.date.day)
+            loan.debt = debt - int(data["debt"])
+            if (datetime.date.today() - loan_date).days >= 30:
+                loan.date = datetime.date.today()
+                loan.debt = Loan.get_current_debt(data["loan_id"])
+            else:
+                loan.date = loan.date
 
         loan.save_to_db()
         return jsonify({'Message': 'Loan has been updated successfully.'})
