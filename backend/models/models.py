@@ -76,7 +76,7 @@ class Loan(db.Model):
         if not loan:
             return {"Error": f"Loan with loan id={loan_id} not found"}, 404
         debt = Loan.get_current_debt(loan_id)
-        data = {"date": loan.date, "debt": debt, "user_id": loan.user_id}
+        data = {"date": loan.date, "debt": debt, "user_id": loan.user_id, "loan_id": loan.loan_id}
         return data
 
     @classmethod
